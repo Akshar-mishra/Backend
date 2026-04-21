@@ -31,7 +31,6 @@ const userSchema = new Schema(
         },
         coverImage: {
             type: String,
-            required: true
         },
         watchHistory: [
             {
@@ -51,17 +50,19 @@ const userSchema = new Schema(
 )
 
 //dont use ()=>{} bcs it dont allow (this.) and we need this in pre
+//async lga hai to no need of next() 
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
 
     this.password = await bcrypt.hash(this.password, 10);
-    next()
 })
+
 
 //check password
 userSchema.methods.isPasswordCorrect = async function (pass) {
     return await bcrypt.compare(pass, this.password)
 }
+
 
 //jwt sign(payload,secret key , options)
 userSchema.methods.generateAccessToken = function () {
@@ -76,6 +77,7 @@ userSchema.methods.generateAccessToken = function () {
             {expiresIn:process.env.ACCESS_TOKEN_EXPIRY}
         )
 }
+
 
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
