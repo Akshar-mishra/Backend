@@ -2,8 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
-import userRouter from './routes/user.router.js';
-
 const app=express()
 
 app.use(cors({
@@ -12,12 +10,13 @@ app.use(cors({
 }))
 
 app.use(express.json({limit:'16kb'})) //allow our server to accept json data from frontend
-app.use(express.urlencoded({extended:true , limit:'16kb'}))
+app.use(express.urlencoded({extended:true , limit:'16kb'})) //html form submisson data ko accept karne ke liye
 app.use(express.static('public'))
 
 app.use(cookieParser())  //string ko obj bna deta hai 
 
 //router code
+import userRouter from './routes/user.router.js';
 app.use("/api/v1/users", userRouter)
 
-export {app}
+export default app

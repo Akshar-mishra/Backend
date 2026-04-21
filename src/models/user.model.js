@@ -40,7 +40,7 @@ const userSchema = new Schema(
             }
         ],
         password: {
-            types: String,
+            type: String,
             required: [true, "password is req"]
         },
         refreshToken: {
@@ -50,7 +50,7 @@ const userSchema = new Schema(
     { timestamps: true }
 )
 
-//dont use ()=>{} bcs it dont allow (this.) and we need trhis in pre
+//dont use ()=>{} bcs it dont allow (this.) and we need this in pre
 userSchema.pre("save", async function (next) {
     if (!this.isModified("password")) return next();
 
@@ -65,9 +65,9 @@ userSchema.methods.isPasswordCorrect = async function (pass) {
 
 //jwt sign(payload,secret key , options)
 userSchema.methods.generateAccessToken = function () {
-        jwt.sign(
+        return jwt.sign(
             {
-                _id:this.id,
+                _id:this.id,  //can be  this._id
                 username:this.username,
                 fullName:this.fullName,
                 email:this.email
@@ -78,7 +78,7 @@ userSchema.methods.generateAccessToken = function () {
 }
 
 userSchema.methods.generateRefreshToken = function () {
-    jwt.sign(
+    return jwt.sign(
             {
                 _id:this.id
             },
