@@ -4,6 +4,27 @@ import {User} from '../models/user.model.js'
 import {uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js';
 
+
+const generateAccessAndRefreshToken= async (userId)=>
+{
+    try
+    {
+        const user= await User.findById(userId);
+        const accessToken=user.generateAccessToken
+        const refreshToken=user.generateRefreshToken;
+
+        user.refreshToken=refreshToken;
+        await user.save({ validateBeforeSave:false })
+ 
+        return {accessToken,refreshToken}
+
+    }
+    catch(err){
+        throw new ApiErrors(401,"Somthing went wrong while generating tokens")
+    }
+}
+
+
 const registerUser= asyncHandler(async(req,res)=>{
     //get user detail from frontend
     //validation->not empty
@@ -34,7 +55,7 @@ const registerUser= asyncHandler(async(req,res)=>{
     //check if user already exist with email or username
     const existedUser=await User.findOne({$or: [{username},{email}]})
     if(existedUser){
-        throw new ApiErrors(402,"User already exist or email used")
+        throw new ApiErrors(402,"User already exist or email already exists")
     }
 
 
@@ -82,4 +103,86 @@ const registerUser= asyncHandler(async(req,res)=>{
     )
 })
 
-export {registerUser}
+
+const loginUser=asyncHandler(async(req,res)=>{
+    //req body se data
+    //user name and email check
+    //find the user
+    //password cheeck
+    //access & refresh token generation
+    //send secure cookies of them 
+    //success
+
+    const {email,username,password}=req.body
+    if(!(username || email)){
+        throw new ApiErrors(400,"Username and email is req")
+    }
+
+
+    const user= await User.findOne({ $or: [{username}, {email}]})
+    if(!user){
+        throw new ApiErrors(404,"User doesnt exist")
+    }
+    
+
+    //User is whole database so we cant use it here so we use instance here as (user)
+    const isPasswordValid= await user.isPasswordCorrect(password)
+    if(!isPasswordValid){
+            throw new ApiErrors(404,"uPassword Incorrect")
+    }
+
+    //IMP commpon practice for ACT & RFT so we make seprate method
+    const {accessToken,refreshToken} = await generateAccessAndRefreshToken(user._id)
+
+    //user ko ye nhi bhejna hai
+    const loggedInUser= await User.findById(user._id).select("-password -refreshToken")
+
+    //cookies bhejna
+    const options={
+        httpOnly:true,
+        secure:true
+    }
+
+    return res.status(200)
+    .cookie("accessToken",accessToken,options)
+    .cookie("refreshToken",refreshToken,options)
+    .json(
+        new ApiResponse(
+            200,
+            {user: loggedInUser,accessToken,refreshToken},
+            "User loggedin successfully"
+        )
+    )
+})
+
+
+const logoutUser= asyncHandler(async(req,res)=>{
+    //1st made the middleware to verify the user with jwt token and then we can use that user here in logout
+    
+    //clear the refresh token from db
+    await User.findByIdAndUpdate(
+        req.user._id,
+        {
+            $set:{
+                refreshToken:false
+            }
+        },
+        {
+            new:true
+        }
+    )
+
+    //ccookies delete kro
+    const options={
+        httpOnly:true,
+        secure:true
+    }
+
+    return res.status(200)
+    .clearCookie("accessToken",options)
+    .clearCookie("refreshToken",options)
+    .json(new ApiResponse(200,{},"User logged out"))
+    
+})
+
+export {registerUser,loginUser ,logoutUser }
