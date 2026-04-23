@@ -51,8 +51,8 @@ const userSchema = new Schema(
 
 //dont use ()=>{} bcs it dont allow (this.) and we need this in pre
 //async lga hai to no need of next() 
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
+userSchema.pre("save", async function () {
+    if (!this.isModified("password")) return ;
 
     this.password = await bcrypt.hash(this.password, 10);
 })
@@ -81,9 +81,7 @@ userSchema.methods.generateAccessToken = function () {
 
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
-            {
-                _id:this.id
-            },
+            {_id:this._id},
             process.env.REFRESH_TOKEN_SECRET,
             {expiresIn:process.env.REFRESH_TOKEN_EXPIRY}
         )

@@ -19,4 +19,12 @@ app.use(cookieParser())  //string ko obj bna deta hai
 import userRouter from './routes/user.router.js';
 app.use("/api/v1/users", userRouter)
 
+app.use((err, req, res, next) => {
+    console.error("🔥 ERROR:", err); // now you'll SEE the error
+
+    res.status(err.statusCode || 500).json({
+        success: false,
+        message: err.message || "Internal Server Error"
+    });
+});
 export default app

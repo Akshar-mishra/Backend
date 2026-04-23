@@ -5,24 +5,25 @@ import {uploadOnCloudinary} from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/ApiResponse.js';
 
 
-const generateAccessAndRefreshToken= async (userId)=>
-{
-    try
-    {
-        const user= await User.findById(userId);
-        const accessToken=user.generateAccessToken
-        const refreshToken=user.generateRefreshToken;
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId);
 
-        user.refreshToken=refreshToken;
-        await user.save({ validateBeforeSave:false })
- 
-        return {accessToken,refreshToken}
+        const accessToken = user.generateAccessToken(); 
+        const refreshToken = user.generateRefreshToken(); 
+        //inside schema wala refreshToken
+        user.refreshToken = refreshToken;
 
+        await user.save({ validateBeforeSave: false });
+
+        return { accessToken, refreshToken };
+
+    } catch (err) {
+        //throw new ApiErrors(401, "Something went wrong while generating tokens");
+        console.error("TOKEN ERROR:", err); 
+        throw err;
     }
-    catch(err){
-        throw new ApiErrors(401,"Somthing went wrong while generating tokens")
-    }
-}
+};
 
 
 const registerUser= asyncHandler(async(req,res)=>{
@@ -52,7 +53,7 @@ const registerUser= asyncHandler(async(req,res)=>{
     }
 
 
-    //check if user already exist with email or username
+    //check if user already exist with email or username frm db
     const existedUser=await User.findOne({$or: [{username},{email}]})
     if(existedUser){
         throw new ApiErrors(402,"User already exist or email already exists")
@@ -60,14 +61,12 @@ const registerUser= asyncHandler(async(req,res)=>{
 
 
     //checking avatar n images
-    const avatarLocalPath=req.files?.avatar[0]?.path;
-    //const coverImageLocalPath=req.files?.coverImage[0]?.path;
-
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    //const coverImageLocalPath = req.files?.coverImage[0]?.path;
+    console.log(req.files);
     let coverImageLocalPath;
-    if (req.files && Array.isArray(req.files.
-    coverImage) && req.files.coverImage.length > 0) {
-    coverImageLocalPath = req.files.coverImage[0].
-    path
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
     }
 
     if(!avatarLocalPath){
@@ -90,6 +89,7 @@ const registerUser= asyncHandler(async(req,res)=>{
         password,
         username:username.toLowerCase()
     });
+    //hiding password and refresh token from api response 
     const createdUser = await User.findById(user._id).select(
         "-password -refreshToken"  //ye fields nhi aayengi 
     ) 
@@ -125,13 +125,13 @@ const loginUser=asyncHandler(async(req,res)=>{
     }
     
 
-    //User is whole database so we cant use it here so we use instance here as (user)
+    //User is whole database so we cant use it here so we use instance here as (user) 
     const isPasswordValid= await user.isPasswordCorrect(password)
     if(!isPasswordValid){
-            throw new ApiErrors(404,"uPassword Incorrect")
+            throw new ApiErrors(404,"Password Incorrect")
     }
 
-    //IMP commpon practice for ACT & RFT so we make seprate method
+    //IMP common practice for ACT & RFT so we make seprate method
     const {accessToken,refreshToken} = await generateAccessAndRefreshToken(user._id)
 
     //user ko ye nhi bhejna hai
@@ -140,7 +140,7 @@ const loginUser=asyncHandler(async(req,res)=>{
     //cookies bhejna
     const options={
         httpOnly:true,
-        secure:true
+        secure:false
     }
 
     return res.status(200)
@@ -182,7 +182,9 @@ const logoutUser= asyncHandler(async(req,res)=>{
     .clearCookie("accessToken",options)
     .clearCookie("refreshToken",options)
     .json(new ApiResponse(200,{},"User logged out"))
-    
+
 })
 
+
+const 
 export {registerUser,loginUser ,logoutUser }
