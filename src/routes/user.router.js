@@ -1,23 +1,13 @@
-import {Router} from 'express';
-import {loginUser, logoutUser, refreshAccessToken, registerUser} from '../controllers/user.controller.js';
-import {upload} from '../middlewares/multer.middleware.js'
+import { Router } from 'express';
+import { loginUser, logoutUser, refreshAccessToken, registerUser } from '../controllers/user.controller.js';
+import { upload } from '../middlewares/multer.middleware.js'
 import { verifyJWT } from '../middlewares/auth.middleware.js';
 
 const router = Router();
- 
+
 router.route("/register").post(
     //injecting middleware multer
-    upload.fields([
-        {
-            name:"avatar",
-            maxCount:1
-        },
-        {
-            name:"coverImage",
-            maxCount:1
-        }
-    ]),
-    
+    upload.fields([ {name: "avatar", maxCount: 1 }, { name: "coverImage", maxCount: 1} ]),
     registerUser
 )
 
